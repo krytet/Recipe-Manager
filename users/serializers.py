@@ -1,12 +1,14 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.contrib.auth.password_validation import validate_password
 
 from rest_framework.response import Response
 from rest_framework import status
 
 
 User = get_user_model()
+
 
 
 class RegisterUserSerializer(serializers.ModelSerializer):
@@ -19,12 +21,25 @@ class RegisterUserSerializer(serializers.ModelSerializer):
                         #queryset=User.objects.all())
     first_name = serializers.CharField(max_length=150, required=True)
     last_name = serializers.CharField(max_length=150, required=True)
-    password = serializers.CharField(max_length=150, required=True, write_only=True)
+    password = serializers.CharField(max_length=150, 
+                                     required=True, 
+                                     write_only=True)
     
 
     class Meta:
         model = User
         fields = ['id','email','username','first_name','last_name','password']
+    
+    def validate_password(self, data):
+            validate_password(password=data, user=User)
+            return data
+
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        user = User.objects.create(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
 
 
 
@@ -56,6 +71,14 @@ class UserPasswordSerilazer(serializers.ModelSerializer):
             return data
         else:
             raise serializers.ValidationError("Пароль не изменён, так как прежний пароль введён неправильно.") 
+
+    def validate_new_password(self, data):
+        #TODO получать текущего пользователя
+        #user = User.objects.get(id=2)
+        if validate_password(password=data):
+            return data
+        else:
+            raise serializers.ValidationError("Пароль не изменён, так как новый не прошёл валидацию") 
 
     
 

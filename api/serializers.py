@@ -1,19 +1,59 @@
+from django.db.models import fields
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from collections import OrderedDict
+from rest_framework.authtoken.serializers import AuthTokenSerializer
+from django.contrib.auth import authenticate
+from rest_framework.generics import get_object_or_404
 
 from api.models import Ingredient, Recipe, RecipeIngredient, Tag
+
 
 
 
 User = get_user_model()
 
 
+class CustomAuthTokenSerializer(serializers.Serializer):
+    email = serializers.CharField(
+        label="Email",
+        write_only=True
+    )
+    password = serializers.CharField(
+        label="Password",
+        style={'input_type': 'password'},
+        trim_whitespace=False,
+        write_only=True
+    )
+    token = serializers.CharField(
+        label="Token",
+        read_only=True
+    )
+
+
+    def validate(self, data):
+        email = data.get('email')
+        password = data.get('password')
+        print(data)
+        print(email, password)
+
+        user = get_object_or_404(User, email=email)
+        if user.check_password(password):
+            data['user'] = user
+            return data
+        else:
+            msg = ('Unable to log in with provided credentials.')
+            raise serializers.ValidationError(msg, code='authorization')
+
+
+
+
+
 class TagSerializer(serializers.ModelSerializer):
-    id = serializers.CharField(read_only=True, required=False)
-    name = serializers.CharField(read_only=True, required=False)
-    color = serializers.CharField(read_only=True, required=False)
-    slug = serializers.CharField(read_only=True, required=False)
+    #id = serializers.CharField(read_only=True, required=False)
+    #name = serializers.CharField(read_only=True, required=False)
+    #color = serializers.CharField(read_only=True, required=False)
+    #slug = serializers.CharField(read_only=True, required=False)
 
     class Meta:
         model = Tag
@@ -33,15 +73,6 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecipeIngredient
         fields = ['id', 'name', 'measurement_unit', 'amount']
-
-
-
-class Custom(serializers.SerializerMethodField):
-    def __init__(self, method_name=None, **kwargs):
-        self.method_name = method_name
-        kwargs['source'] = '*'
-        #kwargs['read_only'] = True
-        super().__init__(**kwargs)
 
 
     
@@ -88,11 +119,6 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 
     def create(self, validated_data):
-        print(validated_data)
-        print(self.get_extra_kwargs())
-        print(self.get_fields())
-        print(self.get_validators())
-        print(self.get_unique_together_validators())
         #Извличение ингридиетов и тегов из данных
         ingredients = validated_data.pop('recipe_ingedients')
         tags = validated_data.pop('tags')
@@ -115,14 +141,6 @@ class RecipeSerializer(serializers.ModelSerializer):
             recipe.tags.add(tag)
 
         return recipe
-        
-
-    #def to_representation(self, recipe, instance):
-    #    data = ShowRecipeSerelizer(data=recipe)
-    #    print('!!!!!!!!!!!!!!!!!!!')
-    #    print(data)
-    #    serializer = ShowRecipeSerelizer(recipe, many=True)
-    #    return serializer.data
 
     
     def to_representation(self, data):

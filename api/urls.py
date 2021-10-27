@@ -12,6 +12,9 @@ router.register('tags', views.TagView, basename='tag')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('auth/token/login/', views.CustomObtainAuthToken.as_view()),
+    path('auth/token/logout/', views.CustomDeleteAuthToken.as_view()),
+
 
     #path('hi/', views.Se)
 
