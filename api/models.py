@@ -116,7 +116,5 @@ class FavoriteRecipe(models.Model):
     def __str__(self):
         return f"Favorite recipe: {self.person}"
 
-class Subscription(models.Model):
-    person = models.ForeignKey(User, on_delete=models.CASCADE, related_name='subscription')
-    subscriptions = models.ManyToManyField(User, related_name='subscribers')
+
 # Create your models here.
