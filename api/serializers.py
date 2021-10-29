@@ -6,6 +6,7 @@ from rest_framework.authtoken.serializers import AuthTokenSerializer
 from django.contrib.auth import authenticate
 from rest_framework.generics import get_object_or_404
 
+
 from api.models import Ingredient, Recipe, RecipeIngredient, Tag
 
 
@@ -74,6 +75,13 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
         model = RecipeIngredient
         fields = ['id', 'name', 'measurement_unit', 'amount']
 
+
+
+class ShortShowReciprSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
 
     
 class ShowRecipeSerelizer(serializers.ModelSerializer):
@@ -158,3 +166,5 @@ class RecipeSerializer(serializers.ModelSerializer):
                 ret[field.field_name] = field.to_representation(attribute)
 
         return ret
+
+

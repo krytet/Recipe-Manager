@@ -103,7 +103,7 @@ class RecipeIngredient(models.Model):
 
 class CartShopping(models.Model):
     person = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cart')
-    ingredients = models.ManyToManyField(Recipe)
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='in_cart')
 
     def __str__(self):
         return f"Cart: {self.person}"
@@ -111,7 +111,7 @@ class CartShopping(models.Model):
 
 class FavoriteRecipe(models.Model):
     person = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorite_recipe')
-    recipes = models.ManyToManyField(Recipe)
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='favorite_recipe')
 
     def __str__(self):
         return f"Favorite recipe: {self.person}"

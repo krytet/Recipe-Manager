@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Subscription
 from api.models import Recipe
+from api.serializers import ShortShowReciprSerializer
 
 User = get_user_model()
 
@@ -83,14 +84,6 @@ class UserPasswordSerilazer(serializers.ModelSerializer):
         user = self.context.get('request').user
         user.set_password(validated_data['new_password'])
         return Response(status=status.HTTP_202_ACCEPTED)
-
-
-
-class ShortShowReciprSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Recipe
-        fields = ('id', 'name', 'image', 'cooking_time')
 
 
 
