@@ -38,9 +38,7 @@ class ShowUserView(mixins.CreateModelMixin,
         serializer.is_valid(raise_exception=True)
         serializer.save()
         user = get_object_or_404(User, email= request.data['email'])
-        #headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-        #return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     
 
     def retrieve(self, request, *args, **kwargs):
@@ -63,14 +61,8 @@ class SubscriptionViewSet(ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         currect_user = request.user
-        
         subscriptions = Subscription.objects.filter(respondent=currect_user).all()
-        print(subscriptions)
         subscriptions = User.objects.filter(subscribers__in=subscriptions).all()
-        print(subscriptions)
-
-
-
         serializer = self.get_serializer(subscriptions, many=True)
         return Response(serializer.data)
 
@@ -90,7 +82,6 @@ class SubscriptionViewSet(ModelViewSet):
                 "errors" : 'Вы уже подписаны на данного пользователя'
             }
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
-        
         serializer = self.get_serializer(subscriptions)
         return Response(serializer.data)
 

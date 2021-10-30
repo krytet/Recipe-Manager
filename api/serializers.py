@@ -1,3 +1,4 @@
+import re
 from django.db.models import fields
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
@@ -6,7 +7,7 @@ from rest_framework.authtoken.serializers import AuthTokenSerializer
 from django.contrib.auth import authenticate
 from rest_framework.generics import get_object_or_404
 
-
+from users.models import Subscription
 from api.models import Ingredient, Recipe, RecipeIngredient, Tag
 
 
@@ -47,9 +48,6 @@ class CustomAuthTokenSerializer(serializers.Serializer):
             raise serializers.ValidationError(msg, code='authorization')
 
 
-
-
-
 class TagSerializer(serializers.ModelSerializer):
     #id = serializers.CharField(read_only=True, required=False)
     #name = serializers.CharField(read_only=True, required=False)
@@ -84,16 +82,44 @@ class ShortShowReciprSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'image', 'cooking_time')
 
     
+# copy with users (error (most likely due to a circular import))
+class ShowUserSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField(method_name='get_is_subscribed')
+
+    class Meta:
+        model = User
+        fields = ['id','email','username','first_name','last_name', 'is_subscribed']
+
+    def get_is_subscribed(self, obj):
+        user = self.context
+        try:
+            tmp = Subscription.objects.get(
+                respondent=user.id,
+                subscriptions=obj.id
+            )
+        except:
+            return False
+
+        return True
+
+
+
 class ShowRecipeSerelizer(serializers.ModelSerializer):
     ingredients = RecipeIngredientSerializer(many=True, source='recipe_ingedients')
     tags = TagSerializer(many=True, read_only=True)
     is_favorited = serializers.SerializerMethodField(method_name='get_favorited')
     is_in_shopping_cart = serializers.SerializerMethodField(method_name='get_in_cart')
+    author = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipe
         fields = '__all__'
     
+    def get_author(self, obj):
+        author = obj.author
+        serializer = ShowUserSerializer(author, context=self.context)
+        return serializer.data
+
 
     def get_favorited(self, obj):
         return True
@@ -103,11 +129,11 @@ class ShowRecipeSerelizer(serializers.ModelSerializer):
 
 
 
+# TODO сделать вывод автора
 class RecipeSerializer(serializers.ModelSerializer):
     ingredients = RecipeIngredientSerializer(many=True, source='recipe_ingedients')
-    #author = serializers.SlugRelatedField(
-    #    slug_field='username',
-    #    read_only = True
+    #author = serializers.SlugRelatedField(slug_field='username',read_only = True)
+    author = serializers.SerializerMethodField()
     #tags = TagSerializer(many=True, read_only=True)
     #tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(),many=True)
     #tags = serializers.ManyRelatedField( write_only=True, child_relation=TagSerializer)
@@ -116,34 +142,26 @@ class RecipeSerializer(serializers.ModelSerializer):
         model = Recipe
     
     def get_tags(self, obj):
-        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        print(list(obj.tags.all()))
         tags = list(obj.tags.all())
         serializer = TagSerializer(tags, many=True)
-        #print(serializer)
-        print(serializer.data)
         return serializer.data
-
 
 
     def create(self, validated_data):
         #Извличение ингридиетов и тегов из данных
         ingredients = validated_data.pop('recipe_ingedients')
         tags = validated_data.pop('tags')
+        validated_data['author'] = self.context.get('request').user
         # Создание рецепта
         recipe = Recipe.objects.create(**validated_data)
         # Создание ингрединтов рецепта
         for ingredient in ingredients:
-            print(dict(ingredient)['ingredient'])
-            print(dict(ingredient)['amount'])
             currect_ingredient = Ingredient.objects.get(**(dict(ingredient)['ingredient']))
-            print(currect_ingredient)
             RecipeIngredient.objects.create(
                 ingredient=currect_ingredient,
                 recipe = recipe,
                 amount = dict(ingredient)['amount']
             )
-        print(validated_data)
         # Указане тегов в рецепте
         for tag in tags:
             recipe.tags.add(tag)
@@ -155,16 +173,17 @@ class RecipeSerializer(serializers.ModelSerializer):
         """
         Object data -> Dict of primitive datatypes.
         """
-        ret = OrderedDict()
-        fields = ShowRecipeSerelizer(data)
-
-        for field in fields:
-            attribute = field.get_attribute(data)
-            if attribute is None:
-                ret[field.field_name] = None
-            else:
-                ret[field.field_name] = field.to_representation(attribute)
-
-        return ret
-
+        
+        fields = ShowRecipeSerelizer(data, context=self.context.get('request').user)
+        return OrderedDict(fields.data)
+        # вариант на основе радительской функции
+        #ret = OrderedDict()
+        #for field in fields:
+        #    attribute = field.get_attribute(data)
+        #    if attribute is None:
+        #        ret[field.field_name] = None
+        #    else:
+        #        ret[field.field_name] = field.to_representation(attribute)
+        #return ret
+#
 

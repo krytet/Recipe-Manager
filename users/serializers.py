@@ -54,6 +54,15 @@ class ShowUserSerializer(serializers.ModelSerializer):
         fields = ['id','email','username','first_name','last_name', 'is_subscribed']
 
     def get_is_subscribed(self, obj):
+        user = self.context.get('request').user
+        try:
+            tmp = Subscription.objects.get(
+                respondent=user.id,
+                subscriptions=obj.id
+            )
+        except:
+            return False
+
         return True
 
 
@@ -116,7 +125,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     def get_is_subscribed(self, obj):
         user = self.context.get('request').user
         user_check = obj
-        #user_check = get_object_or_404(User, id=self.give_kwargs('pk'))
         try:
             subscript = Subscription.objects.get(respondent=user,
                                                  subscriptions=user_check)
@@ -126,19 +134,15 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         return True
 
 
-    # TODO проверить правльность вывода с готовыми рецептами
     def get_recipes(self, obj):
-        #user_check = get_object_or_404(User, id=self.give_kwargs('pk'))
         user_check = obj
         recipe = Recipe.objects.filter(author=user_check).all()
         serializer = ShortShowReciprSerializer(recipe, many=True)
-
         return serializer.data
 
 
 
     def get_recipes_count(self, obj):
-        #user_check = get_object_or_404(User, id=self.give_kwargs('pk'))
         user_check = obj
         recipe = Recipe.objects.filter(author=user_check).all().count()
         return recipe

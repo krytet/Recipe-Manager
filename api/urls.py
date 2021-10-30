@@ -7,6 +7,7 @@ from users.routers import CustomRouter
 router = routers.DefaultRouter()
 router.register('recipes', views.RecipeView, basename='recipe')
 router.register('tags', views.TagView, basename='tag')
+router.register('ingredients', views.IngerdientViewSet,basename='ingredients')
 
 custom_router = CustomRouter()
 custom_router.register('favorite', views.FavoriteViewSet, basename='favorite')
