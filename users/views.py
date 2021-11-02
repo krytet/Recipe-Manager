@@ -1,10 +1,10 @@
-from rest_framework import permissions, viewsets
+from rest_framework import permissions
 
 from users.models import Subscription
 from . import serializers
 from rest_framework.viewsets import ModelViewSet
 from django.contrib.auth import get_user_model
-from rest_framework.generics import CreateAPIView, RetrieveAPIView, get_object_or_404
+from rest_framework.generics import CreateAPIView, get_object_or_404
 from rest_framework import mixins
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.response import Response
@@ -14,12 +14,10 @@ from .permissions import CustomUserPermission
 
 User = get_user_model()
 
-
+# Смена пароля
 class ResetPasswordView(CreateAPIView):
     queryset = User.objects.all()
     serializer_class = serializers.UserPasswordSerilazer
-
-
 
 
 class ShowUserView(mixins.CreateModelMixin,
@@ -33,6 +31,7 @@ class ShowUserView(mixins.CreateModelMixin,
     lookup_field = 'pk'
 
 
+    # Регистрация нового пользовтеля
     def create(self, request, *args, **kwargs):
         serializer = serializers.RegisterUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -41,16 +40,18 @@ class ShowUserView(mixins.CreateModelMixin,
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
 
+    # Получение профеля
+    # TODO проверить работоспособость
     def retrieve(self, request, *args, **kwargs):
-
+        # Получение своего профеля
         if self.kwargs['pk'] == 'me':
             serializer = serializers.ShowUserSerializer(request.user)
-            return Response(serializer.data ,status=status.HTTP_200_OK)
+            #return Response(serializer.data ,status=status.HTTP_200_OK)
+        # Получения профеля пользователя с ID
         else:
             user = get_object_or_404(User, id=self.kwargs['pk'])
-
-        serializer = self.get_serializer(user)
-        return Response(serializer.data)
+            serializer = self.get_serializer(user)
+        return Response(serializer.data ,status=status.HTTP_200_OK)
 
 
 class SubscriptionViewSet(ModelViewSet):
@@ -59,6 +60,7 @@ class SubscriptionViewSet(ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
 
+    # Вывод список подписок
     def list(self, request, *args, **kwargs):
         currect_user = request.user
         subscriptions = Subscription.objects.filter(respondent=currect_user).all()
@@ -67,6 +69,7 @@ class SubscriptionViewSet(ModelViewSet):
         return Response(serializer.data)
 
 
+    # Подписаться на прользователя с ID 
     def retrieve(self, request, *args, **kwargs):
         current_user = request.user
         subscriptions = get_object_or_404(User, id=self.kwargs['pk'])
@@ -85,17 +88,17 @@ class SubscriptionViewSet(ModelViewSet):
         serializer = self.get_serializer(subscriptions)
         return Response(serializer.data)
 
+
+    # Отписаться от пользователя с ID
     def destroy(self, request, *args, **kwargs):
         current_user = request.user
         subscriptions = get_object_or_404(User, id=self.kwargs['pk'])
-
         try:
             subscription = Subscription.objects.get(respondent=current_user,
                                      subscriptions=subscriptions)
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         subscription.delete()
-
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

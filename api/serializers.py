@@ -8,7 +8,7 @@ from django.contrib.auth import authenticate
 from rest_framework.generics import get_object_or_404
 
 from users.models import Subscription
-from api.models import Ingredient, Recipe, RecipeIngredient, Tag
+from api.models import CartShopping, FavoriteRecipe, Ingredient, Recipe, RecipeIngredient, Tag
 
 
 
@@ -36,9 +36,6 @@ class CustomAuthTokenSerializer(serializers.Serializer):
     def validate(self, data):
         email = data.get('email')
         password = data.get('password')
-        print(data)
-        print(email, password)
-
         user = get_object_or_404(User, email=email)
         if user.check_password(password):
             data['user'] = user
@@ -48,23 +45,22 @@ class CustomAuthTokenSerializer(serializers.Serializer):
             raise serializers.ValidationError(msg, code='authorization')
 
 
+# Сериализатор для тегов
 class TagSerializer(serializers.ModelSerializer):
-    #id = serializers.CharField(read_only=True, required=False)
-    #name = serializers.CharField(read_only=True, required=False)
-    #color = serializers.CharField(read_only=True, required=False)
-    #slug = serializers.CharField(read_only=True, required=False)
 
     class Meta:
         model = Tag
         fields = '__all__'
 
 
+# Сериализатор для ингридиентов
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
         fields = '__all__'
 
 
+# Сериализатор для вспомогательной модели ингридиентов
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='ingredient.id')
     name = serializers.CharField(source='ingredient.name', read_only=True)
@@ -74,7 +70,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'measurement_unit', 'amount']
 
 
-
+# Сериализатор для краткого вывода рецепта
 class ShortShowReciprSerializer(serializers.ModelSerializer):
     
     class Meta:
@@ -90,8 +86,10 @@ class ShowUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id','email','username','first_name','last_name', 'is_subscribed']
 
+    # Проверка на подписку
     def get_is_subscribed(self, obj):
-        user = self.context
+        # # контекст пераедаеться из высшего сериализатора
+        user = self.context.get('request').user
         try:
             tmp = Subscription.objects.get(
                 respondent=user.id,
@@ -99,7 +97,6 @@ class ShowUserSerializer(serializers.ModelSerializer):
             )
         except:
             return False
-
         return True
 
 
@@ -115,38 +112,51 @@ class ShowRecipeSerelizer(serializers.ModelSerializer):
         model = Recipe
         fields = '__all__'
     
+    # Получить информаци о авторе
     def get_author(self, obj):
         author = obj.author
+        # передаем контекст 
         serializer = ShowUserSerializer(author, context=self.context)
         return serializer.data
 
-
+    # Находиться ли в изброном
     def get_favorited(self, obj):
+        # контекст пераедаеться из высшего сериализатора 
+        user = self.context.get('request').user
+        try:
+            tmp = FavoriteRecipe.objects.get(
+                person = user.id,
+                recipe = obj.id
+            )
+        except:
+            return False
         return True
     
+    # Находиться ингридиенты рецепта в корзине
     def get_in_cart(self, obj):
+        # контекст пераедаеться из высшего сериализатора
+        user = self.context.get('request').user
+        try:
+            tmp = CartShopping.objects.get(
+                person = user.id,
+                recipe = obj.id
+            )
+        except:
+            return False
         return True
 
 
 
-# TODO сделать вывод автора
+# CRUD операции над рецептами
 class RecipeSerializer(serializers.ModelSerializer):
     ingredients = RecipeIngredientSerializer(many=True, source='recipe_ingedients')
-    #author = serializers.SlugRelatedField(slug_field='username',read_only = True)
     author = serializers.SerializerMethodField()
-    #tags = TagSerializer(many=True, read_only=True)
-    #tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(),many=True)
-    #tags = serializers.ManyRelatedField( write_only=True, child_relation=TagSerializer)
+
     class Meta:
         fields = '__all__'
         model = Recipe
     
-    def get_tags(self, obj):
-        tags = list(obj.tags.all())
-        serializer = TagSerializer(tags, many=True)
-        return serializer.data
-
-
+    # Создание рецепта
     def create(self, validated_data):
         #Извличение ингридиетов и тегов из данных
         ingredients = validated_data.pop('recipe_ingedients')
@@ -165,16 +175,15 @@ class RecipeSerializer(serializers.ModelSerializer):
         # Указане тегов в рецепте
         for tag in tags:
             recipe.tags.add(tag)
-
         return recipe
 
-    
+    # Демонстрация рецепта
     def to_representation(self, data):
         """
         Object data -> Dict of primitive datatypes.
         """
-        
-        fields = ShowRecipeSerelizer(data, context=self.context.get('request').user)
+        fields = ShowRecipeSerelizer(data, context=self.context)
+        #fields = ShowRecipeSerelizer(data, context=self.context.get('request').user)
         return OrderedDict(fields.data)
         # вариант на основе радительской функции
         #ret = OrderedDict()
@@ -185,5 +194,5 @@ class RecipeSerializer(serializers.ModelSerializer):
         #    else:
         #        ret[field.field_name] = field.to_representation(attribute)
         #return ret
-#
+
 

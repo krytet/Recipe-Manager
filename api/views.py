@@ -20,19 +20,19 @@ class CustomObtainAuthToken(APIView):
     serializer_class = serializers.CustomAuthTokenSerializer
     #permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     
+    # Получение токена пользователя
     def post(self, request, *args, **kwargs):
         serializer = serializers.CustomAuthTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         token, created = Token.objects.get_or_create(user=user)
-
         return Response({'auth_token': token.key})
 
 
 class CustomDeleteAuthToken(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
-
+    # Удаление токена пользователя
     def post(self, request, *args, **kwargs):
         user = request.user
         token = Token.objects.get(user=user) 
@@ -40,22 +40,21 @@ class CustomDeleteAuthToken(APIView):
         return Response(status=status.HTTP_201_CREATED)
 
 
+# CRUD операций над рецептом
 class RecipeView(ModelViewSet):
     queryset = models.Recipe.objects.all()
     serializer_class = serializers.RecipeSerializer
 
 
+# Получение Тегов
 class TagView(mixins.RetrieveModelMixin,
-              #mixins.CreateModelMixin,
               mixins.ListModelMixin,
               GenericViewSet):
     queryset = models.Tag.objects.all()
     serializer_class = serializers.TagSerializer
 
-def Se(request):
-    return HttpResponse('Hi ')
 
-
+# Получение ингридиентов
 class IngerdientViewSet(mixins.RetrieveModelMixin,
                          mixins.ListModelMixin,
                          GenericViewSet):
@@ -63,9 +62,9 @@ class IngerdientViewSet(mixins.RetrieveModelMixin,
     serializer_class = serializers.IngredientSerializer
 
 
+
 class FavoriteViewSet(ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
-
 
     # добавить в список изброных
     def retrieve(self, request, *args, **kwargs):
