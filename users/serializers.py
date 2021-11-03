@@ -55,6 +55,7 @@ class ShowUserSerializer(serializers.ModelSerializer):
 
     # Вывод являеться ли вы подписчиком 
     def get_is_subscribed(self, obj):
+        #print(self.context.get('request'))
         user = self.context.get('request').user
         try:
             tmp = Subscription.objects.get(
@@ -90,6 +91,7 @@ class UserPasswordSerilazer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context.get('request').user
         user.set_password(validated_data['new_password'])
+        user.save()
         return Response(status=status.HTTP_202_ACCEPTED)
 
 

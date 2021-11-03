@@ -177,13 +177,36 @@ class RecipeSerializer(serializers.ModelSerializer):
             recipe.tags.add(tag)
         return recipe
 
+    # Обновление рецепта
+    def update(self, recipe, validated_data):
+        #Извличение ингридиетов и тегов из данных
+        ingredients = validated_data.pop('recipe_ingedients')
+        tags = validated_data.pop('tags')
+        # обновление данных
+        Recipe.objects.filter(
+            id=recipe.pk).update(**validated_data)
+        recipe.tags.clear()
+        recipe.ingredients.clear()
+        # Создание ингрединтов рецепта
+        for ingredient in ingredients:
+            currect_ingredient = Ingredient.objects.get(**(dict(ingredient)['ingredient']))
+            RecipeIngredient.objects.create(
+                ingredient=currect_ingredient,
+                recipe = recipe,
+                amount = dict(ingredient)['amount'])
+        # Указане тегов в рецепте
+        for tag in tags:
+            recipe.tags.add(tag)
+        return recipe
+
+
     # Демонстрация рецепта
     def to_representation(self, data):
         """
         Object data -> Dict of primitive datatypes.
         """
+        # передаем контекст для получения тикущего пользователя
         fields = ShowRecipeSerelizer(data, context=self.context)
-        #fields = ShowRecipeSerelizer(data, context=self.context.get('request').user)
         return OrderedDict(fields.data)
         # вариант на основе радительской функции
         #ret = OrderedDict()

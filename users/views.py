@@ -18,6 +18,7 @@ User = get_user_model()
 class ResetPasswordView(CreateAPIView):
     queryset = User.objects.all()
     serializer_class = serializers.UserPasswordSerilazer
+    permission_classes = (permissions.IsAuthenticated,)
 
 
 class ShowUserView(mixins.CreateModelMixin,
@@ -45,7 +46,8 @@ class ShowUserView(mixins.CreateModelMixin,
     def retrieve(self, request, *args, **kwargs):
         # Получение своего профеля
         if self.kwargs['pk'] == 'me':
-            serializer = serializers.ShowUserSerializer(request.user)
+            serializer = self.get_serializer(request.user)
+            #serializer = serializers.ShowUserSerializer(request.user)
             #return Response(serializer.data ,status=status.HTTP_200_OK)
         # Получения профеля пользователя с ID
         else:
@@ -86,7 +88,7 @@ class SubscriptionViewSet(ModelViewSet):
             }
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(subscriptions)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
     # Отписаться от пользователя с ID

@@ -10,7 +10,8 @@ from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework import permissions
-from tempfile import TemporaryFile
+from .pagination import StandardResultsSetPagination
+from .permissions import IsAuthorOrAuthOrReadOnly
 
 
 User = get_user_model()
@@ -44,6 +45,10 @@ class CustomDeleteAuthToken(APIView):
 class RecipeView(ModelViewSet):
     queryset = models.Recipe.objects.all()
     serializer_class = serializers.RecipeSerializer
+    pagination_class =  StandardResultsSetPagination
+    permission_classes = (IsAuthorOrAuthOrReadOnly, )
+    #permission_classes = (permissions.IsAuthenticatedOrReadOnly, )
+
 
 
 # Получение Тегов
