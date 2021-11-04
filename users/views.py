@@ -10,6 +10,7 @@ from rest_framework.viewsets import GenericViewSet
 from rest_framework.response import Response
 from rest_framework import status
 from .permissions import CustomUserPermission
+from api.pagination import StandardResultsSetPagination
 
 
 User = get_user_model()
@@ -29,6 +30,7 @@ class ShowUserView(mixins.CreateModelMixin,
     queryset = User.objects.all()
     serializer_class = serializers.ShowUserSerializer
     permission_classes = (CustomUserPermission,)
+    pagination_class =  StandardResultsSetPagination
     lookup_field = 'pk'
 
 
@@ -37,7 +39,6 @@ class ShowUserView(mixins.CreateModelMixin,
         serializer = serializers.RegisterUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        user = get_object_or_404(User, email= request.data['email'])
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
 
@@ -60,15 +61,22 @@ class SubscriptionViewSet(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = serializers.SubscriptionSerializer
     permission_classes = (permissions.IsAuthenticated,)
+    pagination_class =  StandardResultsSetPagination
 
 
-    # Вывод список подписок
-    def list(self, request, *args, **kwargs):
-        currect_user = request.user
-        subscriptions = Subscription.objects.filter(respondent=currect_user).all()
+    def get_queryset(self):
+        subscriptions = Subscription.objects.filter(respondent=self.request.user).all()
         subscriptions = User.objects.filter(subscribers__in=subscriptions).all()
-        serializer = self.get_serializer(subscriptions, many=True)
-        return Response(serializer.data)
+        return subscriptions
+
+
+    ## Вывод список подписок
+    #def list(self, request, *args, **kwargs):
+    #    currect_user = request.user
+    #    subscriptions = Subscription.objects.filter(respondent=currect_user).all()
+    #    subscriptions = User.objects.filter(subscribers__in=subscriptions).all()
+    #    serializer = self.get_serializer(subscriptions, many=True)
+    #    return Response(serializer.data)
 
 
     # Подписаться на прользователя с ID 
