@@ -1,8 +1,8 @@
 import csv
 import os
+import sys
 
 import django
-import sys
 
 sys.path.append('../')
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'recipe_manager.settings')

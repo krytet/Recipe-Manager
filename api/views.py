@@ -1,18 +1,15 @@
-import os
-from django.db.models.deletion import PROTECT
-from django.http.response import FileResponse, HttpResponse
-from rest_framework import mixins, status
-from rest_framework.generics import DestroyAPIView, ListAPIView, get_object_or_404
-from rest_framework.views import APIView
-from . import serializers, models
-from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from django.contrib.auth import get_user_model
+from django.http.response import HttpResponse
+from rest_framework import mixins, permissions, status
 from rest_framework.authtoken.models import Token
+from rest_framework.generics import  ListAPIView, get_object_or_404
 from rest_framework.response import Response
-from rest_framework import permissions
+from rest_framework.views import APIView
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
+
+from . import models, serializers
 from .pagination import StandardResultsSetPagination
 from .permissions import IsAuthorOrAuthOrReadOnly
-
 
 User = get_user_model()
 
@@ -20,7 +17,7 @@ User = get_user_model()
 class CustomObtainAuthToken(APIView):
     serializer_class = serializers.CustomAuthTokenSerializer
     #permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-    
+
     # Получение токена пользователя
     def post(self, request, *args, **kwargs):
         serializer = serializers.CustomAuthTokenSerializer(data=request.data)
@@ -36,7 +33,7 @@ class CustomDeleteAuthToken(APIView):
     # Удаление токена пользователя
     def post(self, request, *args, **kwargs):
         user = request.user
-        token = Token.objects.get(user=user) 
+        token = Token.objects.get(user=user)
         token.delete()
         return Response(status=status.HTTP_201_CREATED)
 
@@ -45,7 +42,7 @@ class CustomDeleteAuthToken(APIView):
 class RecipeView(ModelViewSet):
     queryset = models.Recipe.objects.all()
     serializer_class = serializers.RecipeSerializer
-    pagination_class =  StandardResultsSetPagination
+    pagination_class = StandardResultsSetPagination
     permission_classes = (IsAuthorOrAuthOrReadOnly, )
     #permission_classes = (permissions.IsAuthenticatedOrReadOnly, )
 
@@ -60,8 +57,8 @@ class TagView(mixins.RetrieveModelMixin,
 
 # Получение ингридиентов
 class IngerdientViewSet(mixins.RetrieveModelMixin,
-                         mixins.ListModelMixin,
-                         GenericViewSet):
+                        mixins.ListModelMixin,
+                        GenericViewSet):
     queryset = models.Ingredient.objects.all()
     serializer_class = serializers.IngredientSerializer
 
@@ -83,7 +80,7 @@ class FavoriteViewSet(ModelViewSet):
             error = {
                 'errors': 'Данный рецеп уже добавлен в избраное'
             }
-            return Response(error ,status=status.HTTP_400_BAD_REQUEST)
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
     #Удалить из списка изброных
     def destroy(self, request, *args, **kwargs):
@@ -102,7 +99,7 @@ class FavoriteViewSet(ModelViewSet):
     def list(self, request, *args, **kwargs):
         favorite = models.FavoriteRecipe.objects.filter(person=request.user.id).all()
         recipes = models.Recipe.objects.filter(favorite_recipe__in=favorite)
-        serializer = serializers.ShortShowReciprSerializer(recipes,many=True)
+        serializer = serializers.ShortShowReciprSerializer(recipes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -152,7 +149,7 @@ class DownloadCart(ListAPIView):
         ingredients = models.RecipeIngredient.objects.filter(
             recipe__in=recipe).all()
 
-        response = HttpResponse(content_type = 'txt/plain')
+        response = HttpResponse(content_type='txt/plain')
         response.write('------Список покупок от Foodgram------\n\n')
         for ingredient in ingredients:
             name_ingredient = ingredient.ingredient.name
@@ -162,9 +159,3 @@ class DownloadCart(ListAPIView):
 
         response["Content-Disposition"] = "attachment; filename=shopping_list.txt"
         return response
-
-
-
-  
-
-

@@ -1,34 +1,27 @@
 import re
+from collections import OrderedDict
+
+from django.contrib.auth import authenticate, get_user_model
 from django.db.models import fields
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
-from collections import OrderedDict
 from rest_framework.authtoken.serializers import AuthTokenSerializer
-from django.contrib.auth import authenticate
 from rest_framework.generics import get_object_or_404
 
+from api.models import (CartShopping, FavoriteRecipe, Ingredient, Recipe,
+                        RecipeIngredient, Tag)
 from users.models import Subscription
-from api.models import CartShopping, FavoriteRecipe, Ingredient, Recipe, RecipeIngredient, Tag
-
 
 User = get_user_model()
 
 
 class CustomAuthTokenSerializer(serializers.Serializer):
-    email = serializers.CharField(
-        label="Email",
-        write_only=True
-    )
-    password = serializers.CharField(
-        label="Password",
-        style={'input_type': 'password'},
-        trim_whitespace=False,
-        write_only=True
-    )
-    token = serializers.CharField(
-        label="Token",
-        read_only=True
-    )
+    email = serializers.CharField(label="Email", write_only=True)
+    password = serializers.CharField(label="Password",
+                                     style={'input_type': 'password'},
+                                     trim_whitespace=False,
+                                     write_only=True
+                                    )
+    token = serializers.CharField(label="Token", read_only=True)
 
     def validate(self, data):
         email = data.get('email')
@@ -61,7 +54,9 @@ class IngredientSerializer(serializers.ModelSerializer):
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='ingredient.id')
     name = serializers.CharField(source='ingredient.name', read_only=True)
-    measurement_unit = serializers.CharField(source='ingredient.measurement_unit', read_only=True)
+    measurement_unit = serializers.CharField(
+        source='ingredient.measurement_unit', read_only=True
+        )
     class Meta:
         model = RecipeIngredient
         fields = ['id', 'name', 'measurement_unit', 'amount']
@@ -69,77 +64,80 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 # Сериализатор для краткого вывода рецепта
 class ShortShowReciprSerializer(serializers.ModelSerializer):
-    
+
 
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
 
-    
+
 # copy with users (error (most likely due to a circular import))
 class ShowUserSerializer(serializers.ModelSerializer):
-    is_subscribed = serializers.SerializerMethodField(method_name='get_is_subscribed')
+    is_subscribed = serializers.SerializerMethodField(
+        method_name='get_is_subscribed'
+    )
 
 
     class Meta:
         model = User
-        fields = ['id','email','username','first_name','last_name', 'is_subscribed']
+        fields = ['id', 'email', 'username', 'first_name', 'last_name',
+                  'is_subscribed'
+                 ]
 
     # Проверка на подписку
     def get_is_subscribed(self, obj):
-        # # контекст пераедаеться из высшего сериализатора
+        ## контекст пераедаеться из высшего сериализатора
         user = self.context.get('request').user
         try:
-            tmp = Subscription.objects.get(
-                respondent=user.id,
-                subscriptions=obj.id
-            )
+            tmp = Subscription.objects.get(respondent=user.id,
+                                           subscriptions=obj.id
+                                          )
         except:
             return False
         return True
 
 
 class ShowRecipeSerelizer(serializers.ModelSerializer):
-    ingredients = RecipeIngredientSerializer(many=True, source='recipe_ingedients')
+    ingredients = RecipeIngredientSerializer(many=True,
+                                             source='recipe_ingedients'
+                                            )
     tags = TagSerializer(many=True, read_only=True)
-    is_favorited = serializers.SerializerMethodField(method_name='get_favorited')
-    is_in_shopping_cart = serializers.SerializerMethodField(method_name='get_in_cart')
+    is_favorited = serializers.SerializerMethodField(
+        method_name='get_favorited'
+    )
+    is_in_shopping_cart = serializers.SerializerMethodField(
+        method_name='get_in_cart'
+    )
     author = serializers.SerializerMethodField()
 
 
     class Meta:
         model = Recipe
         fields = '__all__'
-    
+
     # Получить информаци о авторе
     def get_author(self, obj):
         author = obj.author
-        # передаем контекст 
+        # передаем контекст
         serializer = ShowUserSerializer(author, context=self.context)
         return serializer.data
 
     # Находиться ли в изброном
     def get_favorited(self, obj):
-        # контекст пераедаеться из высшего сериализатора 
+        # контекст пераедаеться из высшего сериализатора
         user = self.context.get('request').user
         try:
-            tmp = FavoriteRecipe.objects.get(
-                person = user.id,
-                recipe = obj.id
-            )
+            tmp = FavoriteRecipe.objects.get(person=user.id, recipe=obj.id)
         except:
             return False
         return True
-    
+
     # Находиться ингридиенты рецепта в корзине
     def get_in_cart(self, obj):
         # контекст пераедаеться из высшего сериализатора
         user = self.context.get('request').user
         try:
-            tmp = CartShopping.objects.get(
-                person = user.id,
-                recipe = obj.id
-            )
+            tmp = CartShopping.objects.get(person=user.id, recipe=obj.id)
         except:
             return False
         return True
@@ -147,14 +145,16 @@ class ShowRecipeSerelizer(serializers.ModelSerializer):
 
 # CRUD операции над рецептами
 class RecipeSerializer(serializers.ModelSerializer):
-    ingredients = RecipeIngredientSerializer(many=True, source='recipe_ingedients')
+    ingredients = RecipeIngredientSerializer(many=True,
+                                             source='recipe_ingedients'
+                                            )
     author = serializers.SerializerMethodField()
 
 
     class Meta:
         fields = '__all__'
         model = Recipe
-    
+
     # Создание рецепта
     def create(self, validated_data):
         #Извличение ингридиетов и тегов из данных
@@ -165,12 +165,12 @@ class RecipeSerializer(serializers.ModelSerializer):
         recipe = Recipe.objects.create(**validated_data)
         # Создание ингрединтов рецепта
         for ingredient in ingredients:
-            currect_ingredient = Ingredient.objects.get(**(dict(ingredient)['ingredient']))
-            RecipeIngredient.objects.create(
-                ingredient=currect_ingredient,
-                recipe = recipe,
-                amount = dict(ingredient)['amount']
-            )
+            dict_ingredient = dict(ingredient)['ingredient']
+            currect_ingredient = Ingredient.objects.get(**dict_ingredient)
+            RecipeIngredient.objects.create(ingredient=currect_ingredient,
+                                            recipe=recipe,
+                                            amount=dict(ingredient)['amount']
+                                           )
         # Указане тегов в рецепте
         for tag in tags:
             recipe.tags.add(tag)
@@ -188,11 +188,12 @@ class RecipeSerializer(serializers.ModelSerializer):
         recipe.ingredients.clear()
         # Создание ингрединтов рецепта
         for ingredient in ingredients:
-            currect_ingredient = Ingredient.objects.get(**(dict(ingredient)['ingredient']))
-            RecipeIngredient.objects.create(
-                ingredient=currect_ingredient,
-                recipe = recipe,
-                amount = dict(ingredient)['amount'])
+            dict_ingredient = dict(ingredient)['ingredient']
+            currect_ingredient = Ingredient.objects.get(**dict_ingredient)
+            RecipeIngredient.objects.create(ingredient=currect_ingredient,
+                                            recipe=recipe,
+                                            amount=dict(ingredient)['amount']
+                                           )
         # Указане тегов в рецепте
         for tag in tags:
             recipe.tags.add(tag)
@@ -215,5 +216,3 @@ class RecipeSerializer(serializers.ModelSerializer):
         #    else:
         #        ret[field.field_name] = field.to_representation(attribute)
         #return ret
-
-
