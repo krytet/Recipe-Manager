@@ -119,7 +119,7 @@ class UsersTest(TestCase):
     # Подписки
     def test_subscription(self):
         # Вывод список пописок
-        response = self.client.get('/api/v1/users/subscribe/', **self.header1)
+        response = self.client.get('/api/v1/users/subscriptions/', **self.header1)
         self.assertEqual(response.data['count'], 0, msg='Список должен быть пуст')
         
         ID1 = User.objects.get(email=self.user1_data['email']).id
@@ -133,7 +133,7 @@ class UsersTest(TestCase):
         response = self.client.get(f'/api/v1/users/{ID2}/subscribe/', **self.header1)
         self.assertEqual(response.status_code, 200, msg='Подписка дожны быть удачной')
         # Вывод список пописок
-        response = self.client.get('/api/v1/users/subscribe/', **self.header1)
+        response = self.client.get('/api/v1/users/subscriptions/', **self.header1)
         self.assertEqual(response.data['count'], 1, msg='Список должен быть с 1 пользователем')
         # Проверка профеля пользователя
         response = self.client.get(f'/api/v1/users/{ID2}/', **self.header1)
@@ -146,14 +146,14 @@ class UsersTest(TestCase):
         self.assertEqual(response.status_code, 400, msg='Дожна выйти ошибка, так как нельзя подписаться на себя')
         self.assertEqual(response.data['errors'], 'Вы не можете подписаться на самого себя', msg='Должны быть ошибка о невозможности подписаться на себя')
         # Вывести список подписок
-        response = self.client.get('/api/v1/users/subscribe/', **self.header1)
+        response = self.client.get('/api/v1/users/subscriptions/', **self.header1)
         self.assertEqual(response.data['count'], 1, msg='Список должен быть с 1 пользователем')
         # Отписаться от пользователя
         response = self.client.delete(f'/api/v1/users/{ID2}/subscribe/', **self.header1)
         self.assertEqual(response.status_code, 204, msg='Отписка дожны быть удачной')
 
         # Вывести список подписок
-        response = self.client.get('/api/v1/users/subscribe/', **self.header1)
+        response = self.client.get('/api/v1/users/subscriptions/', **self.header1)
         self.assertEqual(response.data['count'], 0, msg='Список должен быть пустым')
 
         # Проверка профеля пользователя
