@@ -50,7 +50,6 @@ class RecipeView(ModelViewSet):
     #permission_classes = (permissions.IsAuthenticatedOrReadOnly, )
 
 
-
 # Получение Тегов
 class TagView(mixins.RetrieveModelMixin,
               mixins.ListModelMixin,
@@ -65,7 +64,6 @@ class IngerdientViewSet(mixins.RetrieveModelMixin,
                          GenericViewSet):
     queryset = models.Ingredient.objects.all()
     serializer_class = serializers.IngredientSerializer
-
 
 
 class FavoriteViewSet(ModelViewSet):
@@ -87,7 +85,6 @@ class FavoriteViewSet(ModelViewSet):
             }
             return Response(error ,status=status.HTTP_400_BAD_REQUEST)
 
-
     #Удалить из списка изброных
     def destroy(self, request, *args, **kwargs):
         recipe = get_object_or_404(models.Recipe, id=self.kwargs['pk'])
@@ -101,7 +98,6 @@ class FavoriteViewSet(ModelViewSet):
             return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-
     #Вывести список избраных
     def list(self, request, *args, **kwargs):
         favorite = models.FavoriteRecipe.objects.filter(person=request.user.id).all()
@@ -110,11 +106,8 @@ class FavoriteViewSet(ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-
-
 class CartShopingViewSet(GenericViewSet):
     permission_classes = (permissions.IsAuthenticated,)
-
 
     # добавить в список покупок
     def retrieve(self, request, *args, **kwargs):
@@ -131,7 +124,6 @@ class CartShopingViewSet(GenericViewSet):
                 'errors' : 'Данный рецепт уже добавлен в список покупок'
             }
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
-
 
     #Удалить из списка покупок
     def destroy(self, request, *args, **kwargs):
@@ -150,11 +142,9 @@ class CartShopingViewSet(GenericViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-
 # Скачать списка покупок
 class DownloadCart(ListAPIView):
     permission_classes = (permissions.IsAuthenticated,)
-
 
     def list(self, request, *args, **kwargs):
         cart = models.CartShopping.objects.filter(person=request.user.id).all()

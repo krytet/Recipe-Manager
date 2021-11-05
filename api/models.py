@@ -6,7 +6,6 @@ from django.core.validators import MinValueValidator
 
 User = get_user_model()
 
-
 MASURE = (
     ('шт.', 'шт.'),
     ('звездочка', 'звездочка'),
@@ -87,7 +86,6 @@ class Recipe(models.Model):
     cooking_time = models.IntegerField(validators=[MinValueValidator(0)])
     image = models.ImageField(upload_to='images' ,null=True)
 
-
     def __str__(self):
         return  f'{self.id} {self.name}'
 
@@ -117,4 +115,4 @@ class FavoriteRecipe(models.Model):
         return f"Favorite recipe: {self.person}"
 
 
-# Create your models here.
+

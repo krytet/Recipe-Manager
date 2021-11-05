@@ -11,8 +11,6 @@ from users.models import Subscription
 from api.models import CartShopping, FavoriteRecipe, Ingredient, Recipe, RecipeIngredient, Tag
 
 
-
-
 User = get_user_model()
 
 
@@ -31,7 +29,6 @@ class CustomAuthTokenSerializer(serializers.Serializer):
         label="Token",
         read_only=True
     )
-
 
     def validate(self, data):
         email = data.get('email')
@@ -73,6 +70,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 # Сериализатор для краткого вывода рецепта
 class ShortShowReciprSerializer(serializers.ModelSerializer):
     
+
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
@@ -81,6 +79,7 @@ class ShortShowReciprSerializer(serializers.ModelSerializer):
 # copy with users (error (most likely due to a circular import))
 class ShowUserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField(method_name='get_is_subscribed')
+
 
     class Meta:
         model = User
@@ -100,13 +99,13 @@ class ShowUserSerializer(serializers.ModelSerializer):
         return True
 
 
-
 class ShowRecipeSerelizer(serializers.ModelSerializer):
     ingredients = RecipeIngredientSerializer(many=True, source='recipe_ingedients')
     tags = TagSerializer(many=True, read_only=True)
     is_favorited = serializers.SerializerMethodField(method_name='get_favorited')
     is_in_shopping_cart = serializers.SerializerMethodField(method_name='get_in_cart')
     author = serializers.SerializerMethodField()
+
 
     class Meta:
         model = Recipe
@@ -146,11 +145,11 @@ class ShowRecipeSerelizer(serializers.ModelSerializer):
         return True
 
 
-
 # CRUD операции над рецептами
 class RecipeSerializer(serializers.ModelSerializer):
     ingredients = RecipeIngredientSerializer(many=True, source='recipe_ingedients')
     author = serializers.SerializerMethodField()
+
 
     class Meta:
         fields = '__all__'
@@ -198,7 +197,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         for tag in tags:
             recipe.tags.add(tag)
         return recipe
-
 
     # Демонстрация рецепта
     def to_representation(self, data):

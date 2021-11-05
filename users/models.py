@@ -11,4 +11,4 @@ class Subscription(models.Model):
 
     def __str__(self) :
         return f"{self.respondent} подписался на {self.subscriptions}"
-# Create your models here.
+

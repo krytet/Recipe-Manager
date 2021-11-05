@@ -33,7 +33,6 @@ class ShowUserView(mixins.CreateModelMixin,
     pagination_class =  StandardResultsSetPagination
     lookup_field = 'pk'
 
-
     # Регистрация нового пользовтеля
     def create(self, request, *args, **kwargs):
         serializer = serializers.RegisterUserSerializer(data=request.data)
@@ -41,7 +40,6 @@ class ShowUserView(mixins.CreateModelMixin,
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
-
     # Получение профеля
     # TODO проверить работоспособость
     def retrieve(self, request, *args, **kwargs):
@@ -63,12 +61,10 @@ class SubscriptionViewSet(ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class =  StandardResultsSetPagination
 
-
     def get_queryset(self):
         subscriptions = Subscription.objects.filter(respondent=self.request.user).all()
         subscriptions = User.objects.filter(subscribers__in=subscriptions).all()
         return subscriptions
-
 
     ## Вывод список подписок
     #def list(self, request, *args, **kwargs):
@@ -77,7 +73,6 @@ class SubscriptionViewSet(ModelViewSet):
     #    subscriptions = User.objects.filter(subscribers__in=subscriptions).all()
     #    serializer = self.get_serializer(subscriptions, many=True)
     #    return Response(serializer.data)
-
 
     # Подписаться на прользователя с ID 
     def retrieve(self, request, *args, **kwargs):
@@ -97,7 +92,6 @@ class SubscriptionViewSet(ModelViewSet):
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(subscriptions)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
     # Отписаться от пользователя с ID
     def destroy(self, request, *args, **kwargs):

@@ -27,6 +27,7 @@ class RegisterUserSerializer(serializers.ModelSerializer):
                                      required=True, 
                                      write_only=True)
     
+
     class Meta:
         model = User
         fields = ['id','email','username','first_name','last_name','password']
@@ -45,9 +46,9 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         return user
 
 
-
 class ShowUserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField(method_name='get_is_subscribed')
+
 
     class Meta:
         model = User
@@ -69,6 +70,7 @@ class ShowUserSerializer(serializers.ModelSerializer):
 class UserPasswordSerilazer(serializers.ModelSerializer):
     new_password = serializers.CharField(max_length=150, required=True, write_only=True)
     current_password = serializers.CharField(max_length=150, required=True, write_only=True)
+
 
     class Meta:
         model = User
