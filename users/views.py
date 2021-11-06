@@ -1,9 +1,9 @@
 from django.contrib.auth import get_user_model
 from rest_framework import mixins, permissions, status
+from rest_framework.decorators import action
 from rest_framework.generics import CreateAPIView, get_object_or_404
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
-from rest_framework.decorators import action
 
 from api.pagination import StandardResultsSetPagination
 from users.models import Subscription
