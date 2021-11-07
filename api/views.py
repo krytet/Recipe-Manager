@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from django_filters import rest_framework as filters
 
-from api.filters import RecipeFilter
+from api.filters import IngredientFilter, RecipeFilter
 
 from . import models, serializers
 from .pagination import StandardResultsSetPagination
@@ -159,3 +159,6 @@ class IngerdientViewSet(mixins.RetrieveModelMixin,
                         GenericViewSet):
     queryset = models.Ingredient.objects.all()
     serializer_class = serializers.IngredientSerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = IngredientFilter
+

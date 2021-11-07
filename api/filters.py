@@ -1,7 +1,7 @@
 from django_filters import rest_framework as filters
 from django_filters.filters import BooleanFilter, CharFilter, ChoiceFilter, NumberFilter
 
-from api.models import CartShopping, FavoriteRecipe, Recipe, User
+from api.models import CartShopping, FavoriteRecipe, Ingredient, Recipe, User
 
 
 class RecipeFilter(filters.FilterSet):
@@ -38,4 +38,17 @@ class RecipeFilter(filters.FilterSet):
         elif value == '0':
             recipe = Recipe.objects.exclude(favorite_recipe__in=favorits)
             return recipe
-            
+
+
+class IngredientFilter(filters.FilterSet):
+    name = CharFilter(method='get_name')
+
+
+    class Meta:
+        model = Ingredient
+        fields = ['name']
+
+    def get_name(self, obj, name, value):
+        print(value)
+        ingr = Ingredient.objects.filter(name__contains=value).all()
+        return ingr
