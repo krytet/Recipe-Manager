@@ -49,12 +49,12 @@ class ShowUserView(mixins.CreateModelMixin,
         subscriptions = Subscription.objects.filter(respondent=self.request.user).all()
         queryset = User.objects.filter(subscribers__in=subscriptions).all()
         page = self.paginate_queryset(queryset)
-        if page is not None:
-            kwargs.setdefault('context', self.get_serializer_context())
-            serializer = serializers.SubscriptionSerializer(page, many=True,
-                                                           *args, **kwargs
-                                                           )
-            return self.get_paginated_response(serializer.data)
+        serializer = serializers.SubscriptionSerializer(page, many=True,
+                                                        context={
+                                                            'request':request
+                                                        }
+                                                       )
+        return self.get_paginated_response(serializer.data)
     
     # Подписаться и отписаться 
     @action(detail=True, methods=['get', 'delete'],
@@ -73,10 +73,10 @@ class ShowUserView(mixins.CreateModelMixin,
             if not status_c:
                 error = {"errors" : 'Вы уже подписаны на данного пользователя'}
                 return Response(error, status=status.HTTP_400_BAD_REQUEST)
-            kwargs.setdefault('context', self.get_serializer_context())
-            kwargs.pop('pk')
             serializer = serializers.SubscriptionSerializer(subscriptions,
-                                                           *args, **kwargs
+                                                            context={
+                                                                'request':request
+                                                            }
                                                            )
             return Response(serializer.data, status=status.HTTP_200_OK)
         elif request.method == 'DELETE':

@@ -7,6 +7,9 @@ from rest_framework.generics import ListAPIView, get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from django_filters import rest_framework as filters
+
+from api.filters import RecipeFilter
 
 from . import models, serializers
 from .pagination import StandardResultsSetPagination
@@ -45,6 +48,8 @@ class RecipeView(ModelViewSet):
     serializer_class = serializers.RecipeSerializer
     pagination_class = StandardResultsSetPagination
     permission_classes = (IsAuthorOrAuthOrReadOnly, )
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = RecipeFilter
     #permission_classes = (permissions.IsAuthenticatedOrReadOnly, )
 
     # Вывод список подписок

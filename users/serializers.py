@@ -143,7 +143,12 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     # Получить список рецептов
     def get_recipes(self, obj):
         user_check = obj
-        recipe = Recipe.objects.filter(author=user_check).all()
+        max_recipe = self.context.get('request').GET.get('recipes_limit')
+        if max_recipe == None:
+            max_recipe = 5
+        else:
+            max_recipe = int(max_recipe)
+        recipe = Recipe.objects.filter(author=user_check)[:max_recipe]
         serializer = ShortShowReciprSerializer(recipe, many=True)
         return serializer.data
 
