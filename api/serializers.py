@@ -1,7 +1,9 @@
+import base64
 import re
 from collections import OrderedDict
 
 from django.contrib.auth import authenticate, get_user_model
+from django.core.files.base import ContentFile
 from django.db.models import fields
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
@@ -149,11 +151,19 @@ class RecipeSerializer(serializers.ModelSerializer):
                                              source='recipe_ingedients'
                                             )
     author = serializers.SerializerMethodField()
+    image = serializers.CharField()
 
 
     class Meta:
         fields = '__all__'
         model = Recipe
+
+    # Получение изоброжения
+    def save_image_with_base64(self, data):
+        data_foto = base64.b64decode(data.split(',')[1])
+        split_data = re.split(':|/|;',data)
+        file_name = split_data[1] + '.' + split_data[2]
+        return ContentFile(data_foto, file_name)
 
     # Создание рецепта
     def create(self, validated_data):
@@ -161,6 +171,13 @@ class RecipeSerializer(serializers.ModelSerializer):
         ingredients = validated_data.pop('recipe_ingedients')
         tags = validated_data.pop('tags')
         validated_data['author'] = self.context.get('request').user
+        # Получение изоброжения 
+        try:
+            image = validated_data.pop('image')
+            image = self.save_image_with_base64(image)
+            validated_data['image'] = image
+        except:
+            pass
         # Создание рецепта
         recipe = Recipe.objects.create(**validated_data)
         # Создание ингрединтов рецепта
@@ -181,6 +198,13 @@ class RecipeSerializer(serializers.ModelSerializer):
         #Извличение ингридиетов и тегов из данных
         ingredients = validated_data.pop('recipe_ingedients')
         tags = validated_data.pop('tags')
+        # Получение изоброжения 
+        try:
+            image = validated_data.pop('image')
+            image = self.save_image_with_base64(image)
+            validated_data['image'] = image
+        except:
+            pass
         # обновление данных
         Recipe.objects.filter(
             id=recipe.pk).update(**validated_data)

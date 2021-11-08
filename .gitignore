@@ -18,4 +18,7 @@ __pycache__/
 static/
 posts/static/
 
+media/
+api/images/
+
 db.sqlite3
