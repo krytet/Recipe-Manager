@@ -2,11 +2,10 @@ import base64
 import re
 from collections import OrderedDict
 
-from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
-from django.db.models import fields
 from rest_framework import serializers
-from rest_framework.authtoken.serializers import AuthTokenSerializer
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 
 from api.models import (CartShopping, FavoriteRecipe, Ingredient, Recipe,
@@ -22,7 +21,7 @@ class CustomAuthTokenSerializer(serializers.Serializer):
                                      style={'input_type': 'password'},
                                      trim_whitespace=False,
                                      write_only=True
-                                    )
+                                     )
     token = serializers.CharField(label="Token", read_only=True)
 
     def validate(self, data):
@@ -47,6 +46,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 # Сериализатор для ингридиентов
 class IngredientSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Ingredient
         fields = '__all__'
@@ -59,6 +59,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     measurement_unit = serializers.CharField(
         source='ingredient.measurement_unit', read_only=True
         )
+
     class Meta:
         model = RecipeIngredient
         fields = ['id', 'name', 'measurement_unit', 'amount']
@@ -66,7 +67,6 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 # Сериализатор для краткого вывода рецепта
 class ShortShowReciprSerializer(serializers.ModelSerializer):
-
 
     class Meta:
         model = Recipe
@@ -79,21 +79,20 @@ class ShowUserSerializer(serializers.ModelSerializer):
         method_name='get_is_subscribed'
     )
 
-
     class Meta:
         model = User
         fields = ['id', 'email', 'username', 'first_name', 'last_name',
                   'is_subscribed'
-                 ]
+                  ]
 
     # Проверка на подписку
     def get_is_subscribed(self, obj):
-        ## контекст пераедаеться из высшего сериализатора
+        # контекст пераедаеться из высшего сериализатора
         user = self.context.get('request').user
         try:
             tmp = Subscription.objects.get(respondent=user.id,
                                            subscriptions=obj.id
-                                          )
+                                           )
         except:
             return False
         return True
@@ -102,7 +101,7 @@ class ShowUserSerializer(serializers.ModelSerializer):
 class ShowRecipeSerelizer(serializers.ModelSerializer):
     ingredients = RecipeIngredientSerializer(many=True,
                                              source='recipe_ingedients'
-                                            )
+                                             )
     tags = TagSerializer(many=True, read_only=True)
     is_favorited = serializers.SerializerMethodField(
         method_name='get_favorited'
@@ -111,7 +110,6 @@ class ShowRecipeSerelizer(serializers.ModelSerializer):
         method_name='get_in_cart'
     )
     author = serializers.SerializerMethodField()
-
 
     class Meta:
         model = Recipe
@@ -149,35 +147,31 @@ class ShowRecipeSerelizer(serializers.ModelSerializer):
 class RecipeSerializer(serializers.ModelSerializer):
     ingredients = RecipeIngredientSerializer(many=True,
                                              source='recipe_ingedients'
-                                            )
+                                             )
     author = serializers.SerializerMethodField()
     image = serializers.CharField()
-
 
     class Meta:
         fields = '__all__'
         model = Recipe
 
-    # Получение изоброжения
-    def save_image_with_base64(self, data):
-        data_foto = base64.b64decode(data.split(',')[1])
-        split_data = re.split(':|/|;',data)
-        file_name = split_data[1] + '.' + split_data[2]
-        return ContentFile(data_foto, file_name)
+    # Провека пароля на соотвествие валидации
+    def validate_image(self, data):
+        try:
+            data_foto = base64.b64decode(data.split(',')[1])
+            split_data = re.split(':|/|;', data)
+            file_name = split_data[1] + '.' + split_data[2]
+            return ContentFile(data_foto, file_name)
+        except:
+            errors = {'image' : 'This format is not supported or it null'}
+            raise ValidationError(errors)
 
     # Создание рецепта
     def create(self, validated_data):
-        #Извличение ингридиетов и тегов из данных
+        # Извличение ингридиетов и тегов из данных
         ingredients = validated_data.pop('recipe_ingedients')
         tags = validated_data.pop('tags')
         validated_data['author'] = self.context.get('request').user
-        # Получение изоброжения 
-        try:
-            image = validated_data.pop('image')
-            image = self.save_image_with_base64(image)
-            validated_data['image'] = image
-        except:
-            pass
         # Создание рецепта
         recipe = Recipe.objects.create(**validated_data)
         # Создание ингрединтов рецепта
@@ -187,7 +181,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             RecipeIngredient.objects.create(ingredient=currect_ingredient,
                                             recipe=recipe,
                                             amount=dict(ingredient)['amount']
-                                           )
+                                            )
         # Указане тегов в рецепте
         for tag in tags:
             recipe.tags.add(tag)
@@ -195,16 +189,9 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     # Обновление рецепта
     def update(self, recipe, validated_data):
-        #Извличение ингридиетов и тегов из данных
+        # Извличение ингридиетов и тегов из данных
         ingredients = validated_data.pop('recipe_ingedients')
         tags = validated_data.pop('tags')
-        # Получение изоброжения 
-        try:
-            image = validated_data.pop('image')
-            image = self.save_image_with_base64(image)
-            validated_data['image'] = image
-        except:
-            pass
         # обновление данных
         Recipe.objects.filter(
             id=recipe.pk).update(**validated_data)
@@ -217,7 +204,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             RecipeIngredient.objects.create(ingredient=currect_ingredient,
                                             recipe=recipe,
                                             amount=dict(ingredient)['amount']
-                                           )
+                                            )
         # Указане тегов в рецепте
         for tag in tags:
             recipe.tags.add(tag)
@@ -232,11 +219,13 @@ class RecipeSerializer(serializers.ModelSerializer):
         fields = ShowRecipeSerelizer(data, context=self.context)
         return OrderedDict(fields.data)
         # вариант на основе радительской функции
-        #ret = OrderedDict()
-        #for field in fields:
-        #    attribute = field.get_attribute(data)
-        #    if attribute is None:
-        #        ret[field.field_name] = None
-        #    else:
-        #        ret[field.field_name] = field.to_representation(attribute)
-        #return ret
+        '''
+        ret = OrderedDict()
+        for field in fields:
+            attribute = field.get_attribute(data)
+            if attribute is None:
+                ret[field.field_name] = None
+            else:
+                ret[field.field_name] = field.to_representation(attribute)
+        return ret
+        '''

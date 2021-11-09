@@ -1,13 +1,13 @@
 from django.contrib.auth import get_user_model
 from django.http.response import HttpResponse
+from django_filters import rest_framework as filters
 from rest_framework import mixins, permissions, status
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
-from rest_framework.generics import ListAPIView, get_object_or_404
+from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
-from django_filters import rest_framework as filters
 
 from api.filters import IngredientFilter, RecipeFilter
 
@@ -20,7 +20,6 @@ User = get_user_model()
 
 class CustomObtainAuthToken(APIView):
     serializer_class = serializers.CustomAuthTokenSerializer
-    #permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     # Получение токена пользователя
     def post(self, request, *args, **kwargs):
@@ -42,7 +41,7 @@ class CustomDeleteAuthToken(APIView):
         return Response(status=status.HTTP_201_CREATED)
 
 
-# CRUD операций над рецептом, 
+# CRUD операций над рецептом
 class RecipeView(ModelViewSet):
     queryset = models.Recipe.objects.all()
     serializer_class = serializers.RecipeSerializer
@@ -50,7 +49,6 @@ class RecipeView(ModelViewSet):
     permission_classes = (IsAuthorOrAuthOrReadOnly, )
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = RecipeFilter
-    #permission_classes = (permissions.IsAuthenticatedOrReadOnly, )
 
     # Вывод список подписок
     @action(detail=False, methods=['get'], url_path='favorite',
@@ -60,13 +58,13 @@ class RecipeView(ModelViewSet):
         recipes = models.Recipe.objects.filter(favorite_recipe__in=favorite)
         kwargs.setdefault('context', self.get_serializer_context())
         serializer = serializers.ShortShowReciprSerializer(recipes, many=True
-                                                           # TODO ошибка 
-                                                           #*args, **kwargs
-                                                          )
+                                                           # TODO ошибка
+                                                           # *args, **kwargs
+                                                           )
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+
     # Добавить или удалить из списка изброноых
-    @action(detail=True, methods=['get', 'delete'], 
+    @action(detail=True, methods=['get', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
     def favorite(self, request, *args, **kwargs):
         recipe = get_object_or_404(models.Recipe, id=self.kwargs['pk'])
@@ -77,7 +75,9 @@ class RecipeView(ModelViewSet):
             )
             if status_:
                 serializer = serializers.ShortShowReciprSerializer(recipe)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(serializer.data,
+                                status=status.HTTP_201_CREATED
+                                )
             else:
                 error = {
                     'errors': 'Данный рецеп уже добавлен в избраное'
@@ -93,7 +93,7 @@ class RecipeView(ModelViewSet):
             except:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
     # Скачать список покупок
     @action(detail=False, methods=['get'], url_path='download_shopping_cart',
             permission_classes=[permissions.IsAuthenticated])
@@ -108,12 +108,14 @@ class RecipeView(ModelViewSet):
             name_ingredient = ingredient.ingredient.name
             amount = ingredient.amount
             measurement_unit = ingredient.ingredient.measurement_unit
-            response.write(f" {name_ingredient} - {amount} {measurement_unit}\n")
-        response["Content-Disposition"] = "attachment; filename=shopping_list.txt"
+            text = f" {name_ingredient} - {amount} {measurement_unit}\n"
+            response.write(text)
+        response["Content-Disposition"] = ("attachment; "
+                                           "filename=shopping_list.txt")
         return response
 
     # Добавление или удаление из списка покупок
-    @action(detail=True, methods=['get', 'delete'], 
+    @action(detail=True, methods=['get', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
     def shopping_cart(self, request, *args, **kwargs):
         recipe = get_object_or_404(models.Recipe, id=self.kwargs['pk'])
@@ -124,10 +126,12 @@ class RecipeView(ModelViewSet):
             )
             if status_:
                 serializer = serializers.ShortShowReciprSerializer(recipe)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(serializer.data,
+                                status=status.HTTP_201_CREATED
+                                )
             else:
                 error = {
-                    'errors' : 'Данный рецепт уже добавлен в список покупок'
+                    'errors': 'Данный рецепт уже добавлен в список покупок'
                 }
                 return Response(error, status=status.HTTP_400_BAD_REQUEST)
         elif request.method == 'DELETE':
@@ -139,11 +143,11 @@ class RecipeView(ModelViewSet):
                 tmp.delete()
             except:
                 error = {
-                    'errors' : 'Данного рецепта нет в корзине'
+                    'errors': 'Данного рецепта нет в корзине'
                 }
                 return Response(error, status=status.HTTP_400_BAD_REQUEST)
             return Response(status=status.HTTP_204_NO_CONTENT)
-            
+
 
 # Получение Тегов
 class TagView(mixins.RetrieveModelMixin,
@@ -161,4 +165,3 @@ class IngerdientViewSet(mixins.RetrieveModelMixin,
     serializer_class = serializers.IngredientSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = IngredientFilter
-

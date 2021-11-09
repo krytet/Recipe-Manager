@@ -1,24 +1,24 @@
 from django_filters import rest_framework as filters
-from django_filters.filters import BooleanFilter, CharFilter, ChoiceFilter, NumberFilter
+from django_filters.filters import CharFilter, ChoiceFilter
 
-from api.models import CartShopping, FavoriteRecipe, Ingredient, Recipe, User
+from api.models import CartShopping, FavoriteRecipe, Ingredient, Recipe
 
 
 class RecipeFilter(filters.FilterSet):
 
     is_favorited = ChoiceFilter(method='get_is_favorited',
                                 choices=((1, True), (0, False))
-                               )
+                                )
     is_in_shopping_cart = ChoiceFilter(method='get_in_cart',
                                        choices=((1, True), (0, False))
-                                      )
+                                       )
     tags = CharFilter(field_name='tags__slug')
 
-    
+
     class Meta:
         model = Recipe
         fields = ['is_favorited', 'is_in_shopping_cart', 'author', 'tags']
-    
+
     def get_in_cart(self, obj, name, value):
         user = self.request.user
         carts = CartShopping.objects.filter(person=user).all()

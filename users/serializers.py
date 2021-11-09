@@ -17,22 +17,21 @@ class RegisterUserSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(label='ID', read_only=True)
     email = serializers.EmailField(label='Email address', max_length=254,
                                    required=True
-                                  )
+                                   )
     username = serializers.CharField(max_length=150, required=True,
                                      validators=[UnicodeUsernameValidator],
-                                    )
+                                     )
     first_name = serializers.CharField(max_length=150, required=True)
     last_name = serializers.CharField(max_length=150, required=True)
     password = serializers.CharField(max_length=150, required=True,
                                      write_only=True
-                                    )
-
+                                     )
 
     class Meta:
         model = User
         fields = ['id', 'email', 'username', 'first_name', 'last_name',
                   'password'
-                 ]
+                  ]
 
     # Проверка соотвествия пароля
     def validate_password(self, data):
@@ -53,21 +52,20 @@ class ShowUserSerializer(serializers.ModelSerializer):
         method_name='get_is_subscribed'
     )
 
-
     class Meta:
         model = User
         fields = ['id', 'email', 'username', 'first_name', 'last_name',
                   'is_subscribed',
-                 ]
+                  ]
 
     # Вывод являеться ли вы подписчиком
     def get_is_subscribed(self, obj):
-        #print(self.context.get('request'))
         user = self.context.get('request').user
         try:
             tmp = Subscription.objects.get(
                 respondent=user.id,
-                subscriptions=obj.id)
+                subscriptions=obj.id
+            )
         except:
             return False
         return True
@@ -76,11 +74,10 @@ class ShowUserSerializer(serializers.ModelSerializer):
 class UserPasswordSerilazer(serializers.ModelSerializer):
     new_password = serializers.CharField(max_length=150, required=True,
                                          write_only=True
-                                        )
+                                         )
     current_password = serializers.CharField(max_length=150, required=True,
                                              write_only=True
-                                            )
-
+                                             )
 
     class Meta:
         model = User
@@ -92,7 +89,10 @@ class UserPasswordSerilazer(serializers.ModelSerializer):
         if user.check_password(data):
             return data
         else:
-            raise serializers.ValidationError("Пароль не изменён, так как прежний пароль введён неправильно.")
+            raise serializers.ValidationError("Пароль не изменён, так как "
+                                              "прежний пароль введён "
+                                              "неправильно."
+                                              )
 
     # Провека пароля на соотвествие валидации
     def validate_new_password(self, data):
@@ -112,21 +112,22 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
-
     class Meta:
         model = User
         fields = ('email', 'id', 'username', 'first_name',
                   'last_name', 'is_subscribed', 'recipes', 'recipes_count',
-                 )
+                  )
 
-    ## Получение данных из адресной строки
-    #def give_kwargs(self, name):
-    #    source = self.context.get('request').__dict__['parser_context']['kwargs'][name]
-    #    return source
+    # Получение данных из адресной строки
+    '''
+    def give_kwargs(self, name):
+        source = self.context.get('request').__dict__['parser_context']['kwargs'][name]
+        return source
 
-    ## Просмотр всех данных в адресной строки
-    #def give_list_kwargs(self):
-    #    return self.context.get('request').__dict__['parser_context']['kwargs']
+    # Просмотр всех данных в адресной строки
+    def give_list_kwargs(self):
+        return self.context.get('request').__dict__['parser_context']['kwargs']
+    '''
 
     # Проверка являеться ли пользователь подписчиком
     def get_is_subscribed(self, obj):
@@ -135,7 +136,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         try:
             subscript = Subscription.objects.get(respondent=user,
                                                  subscriptions=user_check
-                                                )
+                                                 )
         except:
             return False
         return True
@@ -144,7 +145,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     def get_recipes(self, obj):
         user_check = obj
         max_recipe = self.context.get('request').GET.get('recipes_limit')
-        if max_recipe == None:
+        if max_recipe is None:
             max_recipe = 5
         else:
             max_recipe = int(max_recipe)
